@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Moodwave</title>
+  <link rel="stylesheet" href="style.css"
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      </div>
+      <span class="logo-name">Moodwave</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Menu</div>
+      <a class="nav-link active" href="#">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>Browse
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>Listen Now
+      </a>
+
+      <div class="nav-label" style="margin-top:8px">Library</div>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>Liked Songs
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>Playlists
+      </a>
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>Songs
+      </a>
+    </nav>
+
+    <div class="sidebar-playlists">
+      <div class="nav-label">Playlists</div>
+      <div class="pl-item">
+        <div class="pl-dot" style="background:#1a1a2e;color:#6b7bff">♫</div>
+        Late Night Vibes
+      </div>
+      <div class="pl-item">
+        <div class="pl-dot" style="background:#0f2a1a;color:#30d158">♫</div>
+        Focus Mode
+      </div>
+      <div class="pl-item">
+        <div class="pl-dot" style="background:#2a0e0e;color:#fc3c44">♫</div>
+        Feel-Good Mix
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main" id="mainEl">
+
+    <div class="topbar" id="topbar">
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" placeholder="Search songs, artists…">
+      </div>
+      <div class="topbar-right">
+        <div class="user-chip">
+          <div class="user-avatar">MW</div>
+          <span>You</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-tag">
+        <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2zm0 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"/></svg>
+        AI-Powered Music
+      </div>
+      <h1>What's your<br>mood today?</h1>
+      <p>Tell us how you feel and we'll find 10 songs that match your emotion.</p>
+    </div>
+
+    <div class="section">
+      <div class="card">
+        <div class="card-label">Describe your mood</div>
+        <form id="mood-form">
+          <div class="input-row">
+            <textarea
+              id="mood-input"
+              placeholder="e.g. I feel anxious and overwhelmed, like I can't slow down…"
+              required
+            ></textarea>
+            <button type="submit" class="btn-submit" id="submit-btn">Find Songs</button>
+          </div>
+        </form>
+
+        <div class="emotion-row" id="emotion-row">
+          <div class="e-chip">
+            <div class="e-dot" id="e-dot"></div>
+            <span class="e-text">Detected: <b id="e-text-val"></b></span>
+          </div>
+        </div>
+
+        <div class="err" id="err-msg"></div>
+      </div>
+    </div>
+
+    <div class="loader" id="loader">
+      <div class="bars"><span></span><span></span><span></span><span></span><span></span></div>
+      Curating your playlist…
+    </div>
+
+    <div id="results">
+      <div class="results-heading" id="res-title">Your <em>mood</em> playlist</div>
+      <div class="list-head">
+        <span>#</span>
+        <span>Title</span>
+        <span class="col-artist">Artist</span>
+        <span></span>
+      </div>
+      <div id="tracks-list"></div>
+    </div>
+
+  </main>
+
+  <!-- ── PLAYER BAR ── -->
+  <div class="bar">
+    <!-- Left: track info -->
+    <div class="bar-left">
+      <div class="bar-art" id="bar-art">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      </div>
+      <div class="bar-info">
+        <div class="bar-name idle" id="bar-name">Not playing</div>
+        <div class="bar-artist" id="bar-artist"></div>
+      </div>
+      <button class="bar-heart">
+        <svg viewBox="0 0 24 24"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>
+      </button>
+    </div>
+
+    <!-- Center: controls + progress -->
+    <div class="bar-center">
+      <div class="bar-controls">
+        <button class="bar-ctrl" title="Shuffle">
+          <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="bar-ctrl" title="Previous">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="bar-play" id="bar-play-btn">
+          <svg viewBox="0 0 24 24" id="bar-icon"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="bar-ctrl" title="Next">
+          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button class="bar-ctrl" title="Repeat">
+          <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+      </div>
+      <div class="bar-progress">
+        <span class="bar-time" id="bar-cur">0:00</span>
+        <div class="bar-track" id="bar-track">
+          <div class="bar-fill" id="bar-fill"></div>
+          <div class="bar-thumb" id="bar-thumb"></div>
+        </div>
+        <span class="bar-time" id="bar-dur">0:30</span>
+      </div>
+    </div>
+
+    <!-- Right: volume -->
+    <div class="bar-right">
+      <div class="bar-vol-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+      </div>
+      <div class="bar-vol"><div class="bar-vol-fill"></div></div>
+    </div>
+  </div>
+
+</div><!-- /.app -->
+
+<script>
+  const ELABELS = { joy:'Joy', sadness:'Sadness', anger:'Anger', fear:'Fear', disgust:'Disgust', surprise:'Surprise', neutral:'Neutral' };
+  const PLAY  = 'M8 5v14l11-7z';
+  const PAUSE = 'M6 19h4V5H6zm8-14v14h4V5z';
+
+  // DOM
+  const mainEl    = document.getElementById('mainEl');
+  const topbar    = document.getElementById('topbar');
+  const form      = document.getElementById('mood-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const loader    = document.getElementById('loader');
+  const results   = document.getElementById('results');
+  const tracksList= document.getElementById('tracks-list');
+  const emotionRow= document.getElementById('emotion-row');
+  const eDot      = document.getElementById('e-dot');
+  const eTextVal  = document.getElementById('e-text-val');
+  const errMsg    = document.getElementById('err-msg');
+  const resTitle  = document.getElementById('res-title');
+  const barName   = document.getElementById('bar-name');
+  const barArtist = document.getElementById('bar-artist');
+  const barPlayBtn= document.getElementById('bar-play-btn');
+  const barIcon   = document.getElementById('bar-icon');
+  const barFill   = document.getElementById('bar-fill');
+  const barThumb  = document.getElementById('bar-thumb');
+  const barCur    = document.getElementById('bar-cur');
+  const barDur    = document.getElementById('bar-dur');
+  const barTrack  = document.getElementById('bar-track');
+
+  let audio = null, activeBtn = null, activeRow = null, activeTrack = null, ticker = null;
+
+  const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const setD = (el, d) => el && el.setAttribute('d', d);
+
+  mainEl.addEventListener('scroll', () => topbar.classList.toggle('stuck', mainEl.scrollTop > 50));
+
+  function stopAll() {
+    if (audio) { audio.pause(); audio.currentTime = 0; }
+    if (activeBtn) { activeBtn.classList.remove('active-btn'); setD(activeBtn.querySelector('path'), PLAY); }
+    if (activeRow) activeRow.classList.remove('active');
+    clearInterval(ticker);
+    setD(barIcon.querySelector('path'), PLAY);
+    barFill.style.width = '0%'; barThumb.style.left = '0%'; barCur.textContent = '0:00';
+    audio = null; activeBtn = null; activeRow = null; activeTrack = null;
+  }
+
+  function setIdle() { barName.textContent = 'Not playing'; barName.classList.add('idle'); barArtist.textContent = ''; }
+
+  function play(track, btn, row) {
+    if (activeTrack === track) { stopAll(); setIdle(); return; }
+    stopAll();
+    audio = new Audio(track.preview_url);
+    activeBtn = btn; activeRow = row; activeTrack = track;
+
+    btn.classList.add('active-btn'); setD(btn.querySelector('path'), PAUSE);
+    row.classList.add('active');
+    setD(barIcon.querySelector('path'), PAUSE);
+    barName.textContent = track.name; barName.classList.remove('idle');
+    barArtist.textContent = track.artist;
+
+    audio.addEventListener('loadedmetadata', () => barDur.textContent = fmt(audio.duration));
+    ticker = setInterval(() => {
+      if (!audio?.duration) return;
+      const p = audio.currentTime / audio.duration;
+      barFill.style.width = (p*100)+'%';
+      barThumb.style.left = (p*100)+'%';
+      barCur.textContent = fmt(audio.currentTime);
+    }, 200);
+
+    audio.addEventListener('ended', () => {
+      btn.classList.remove('active-btn'); setD(btn.querySelector('path'), PLAY);
+      row.classList.remove('active');
+      setD(barIcon.querySelector('path'), PLAY);
+      clearInterval(ticker);
+      barFill.style.width='0%'; barThumb.style.left='0%'; barCur.textContent='0:00';
+      audio=null; activeBtn=null; activeRow=null; activeTrack=null;
+      setIdle();
+    });
+
+    audio.play();
+  }
+
+  barPlayBtn.addEventListener('click', () => {
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play();
+      setD(barIcon.querySelector('path'), PAUSE);
+      if (activeBtn) setD(activeBtn.querySelector('path'), PAUSE);
+    } else {
+      audio.pause();
+      setD(barIcon.querySelector('path'), PLAY);
+      if (activeBtn) setD(activeBtn.querySelector('path'), PLAY);
+    }
+  });
+
+  barTrack.addEventListener('click', e => {
+    if (!audio?.duration) return;
+    const r = barTrack.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+  });
+
+  function buildTrack(track, i) {
+    const row = document.createElement('div');
+    row.className = 'track';
+    row.style.animationDelay = (i * 0.04) + 's';
+    const hasPrev = !!track.preview_url;
+
+    row.innerHTML = `
+      <div class="t-idx">
+        <span class="t-num">${i+1}</span>
+        <span class="t-play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="${PLAY}"/></svg></span>
+      </div>
+      <div class="t-title">
+        <div class="t-art"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+        <div class="t-info">
+          <div class="t-name">${esc(track.name)}</div>
+          <div class="t-artist-sub">${esc(track.artist)}</div>
+        </div>
+      </div>
+      <div class="t-artist-col">${esc(track.artist)}</div>
+      <div class="t-actions">
+        <button class="t-btn prev-btn" ${hasPrev ? '' : 'disabled'} title="${hasPrev ? 'Preview' : 'No preview'}">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="${PLAY}"/></svg>
+        </button>
+        <a class="t-btn" href="${esc(track.spotify_url)}" target="_blank" rel="noopener" title="Open in Spotify">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+        </a>
+      </div>
+    `;
+
+    if (hasPrev) {
+      const btn = row.querySelector('.prev-btn');
+      row.querySelector('.t-play-icon').addEventListener('click', () => play(track, btn, row));
+      btn.addEventListener('click', e => { e.stopPropagation(); play(track, btn, row); });
+    }
+
+    return row;
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const mood = document.getElementById('mood-input').value.trim();
+    if (!mood) return;
+
+    stopAll(); setIdle();
+    submitBtn.disabled = true;
+    emotionRow.classList.remove('on');
+    errMsg.classList.remove('on');
+    loader.classList.add('on');
+    results.classList.remove('on');
+    results.style.display = 'none';
+
+    try {
+      const res  = await fetch('/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+
+      if (data.emotion) {
+        eDot.className = 'e-dot ' + data.emotion;
+        eTextVal.textContent = ELABELS[data.emotion] || data.emotion;
+        emotionRow.classList.add('on');
+        resTitle.innerHTML = `Your <em>${(ELABELS[data.emotion]||data.emotion).toLowerCase()}</em> playlist`;
+      }
+
+      tracksList.innerHTML = '';
+      data.tracks.forEach((t, i) => tracksList.appendChild(buildTrack(t, i)));
+      results.style.display = 'block';
+      results.classList.add('on');
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      errMsg.textContent = err.message;
+      errMsg.classList.add('on');
+    } finally {
+      loader.classList.remove('on');
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
