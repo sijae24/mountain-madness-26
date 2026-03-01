@@ -1035,7 +1035,10 @@ form.addEventListener("submit", async (event) => {
       eDot.className = `e-dot ${data.emotion}`;
       eTextVal.textContent = ELABELS[data.emotion] || data.emotion;
       emotionRow.classList.add("on");
-      state.homeTitle = `Your <em>${(ELABELS[data.emotion] || data.emotion).toLowerCase()}</em> playlist`;
+      const headingTag = String(data.tag || ELABELS[data.emotion] || data.emotion || "mood")
+        .trim()
+        .toLowerCase();
+      state.homeTitle = `Your <em>${esc(headingTag)}</em> playlist`;
     }
 
     await setView("home");

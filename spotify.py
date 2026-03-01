@@ -178,7 +178,7 @@ def get_recommendations(text):
 
     artists = get_top_artists_for_tag(tag)
     if not artists:
-        return {"emotion": emotion, "tracks": []}
+        return {"emotion": emotion, "tag": tag, "tracks": []}
 
     # Aim for a fuller playlist instead of only a few tracks.
     target_tracks = 10
@@ -197,5 +197,5 @@ def get_recommendations(text):
             if len(tracks) >= target_tracks:
                 break
 
-    return {"emotion": emotion, "tracks": tracks}
+    return {"emotion": emotion, "tag": tag, "tracks": tracks}
         
