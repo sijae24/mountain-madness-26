@@ -235,7 +235,7 @@ button { font-family: inherit; cursor: pointer; }
   display: flex; align-items: center; gap: 7px;
   background: var(--s2); border: 1px solid var(--border);
   border-radius: 500px; padding: 4px 10px 4px 4px;
-  cursor: pointer; transition: background 0.15s;
+  transition: background 0.15s;
 }
 .user-chip:hover { background: var(--s3); }
 .user-avatar {
@@ -245,6 +245,22 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 0.6rem; font-weight: 700;
 }
 .user-chip span { font-size: 0.775rem; font-weight: 500; }
+.auth-btn {
+  border: 1px solid var(--border);
+  background: rgba(252,60,68,0.14);
+  color: #ffb5b8;
+  height: 24px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.auth-btn:hover {
+  color: #fff;
+  border-color: rgba(252,60,68,0.45);
+  background: rgba(252,60,68,0.24);
+}
 
 /* Hero */
 .hero {

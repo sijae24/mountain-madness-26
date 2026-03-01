@@ -4,6 +4,9 @@ import time
 from urllib.parse import urlencode
 
 from flask import Flask, jsonify, redirect, request, send_from_directory, session
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from db import (
     add_recent_play,
@@ -16,7 +19,10 @@ from db import (
     get_playlist_tracks,
     get_recent_tracks,
     init_db,
+    is_supabase_mode,
     list_playlists,
+    resolve_user_from_access_token,
+    supabase_public_config,
     toggle_like,
 )
 from spotify import get_recommendations, search_tracks
@@ -36,6 +42,9 @@ init_db()
 SPOTIFY_TOKEN_SESSION_KEY = "spotify_token"
 SPOTIFY_STATE_SESSION_KEY = "spotify_oauth_state"
 SPOTIFY_PENDING_PLAYLIST_KEY = "spotify_pending_playlist_id"
+SPOTIFY_USER_ID_SESSION_KEY = "spotify_user_id"
+SUPABASE_USER_ID_SESSION_KEY = "supabase_user_id"
+SUPABASE_USER_EMAIL_SESSION_KEY = "supabase_user_email"
 
 
 def _json_error(message, status=400):
@@ -46,6 +55,47 @@ def _track_from_body(data):
     if not data or "track" not in data:
         raise ValueError("Request must include a track object.")
     return data["track"]
+
+
+def _bearer_token():
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    token = auth.split(" ", 1)[1].strip()
+    return token or None
+
+
+def _clear_supabase_session_identity():
+    session.pop(SUPABASE_USER_ID_SESSION_KEY, None)
+    session.pop(SUPABASE_USER_EMAIL_SESSION_KEY, None)
+
+
+def _resolve_current_user(required=False, allow_session=False):
+    if not is_supabase_mode():
+        return {"id": "local-user", "email": None}
+
+    token = _bearer_token()
+    if token:
+        user = resolve_user_from_access_token(token)
+        if user:
+            session[SUPABASE_USER_ID_SESSION_KEY] = user["id"]
+            session[SUPABASE_USER_EMAIL_SESSION_KEY] = user.get("email")
+            return user
+        _clear_supabase_session_identity()
+
+    if allow_session:
+        user_id = session.get(SUPABASE_USER_ID_SESSION_KEY)
+        if user_id:
+            return {"id": user_id, "email": session.get(SUPABASE_USER_EMAIL_SESSION_KEY)}
+
+    if required:
+        raise PermissionError("Sign in required.")
+    return None
+
+
+def _require_user_id():
+    user = _resolve_current_user(required=True)
+    return user["id"]
 
 
 def _token_expired(token_data):
@@ -84,8 +134,8 @@ def _redirect_with_query(params):
     return redirect("/?" + urlencode(params))
 
 
-def _export_playlist_with_spotify_token(playlist_id):
-    playlist = get_playlist_tracks(playlist_id)
+def _export_playlist_with_spotify_token(playlist_id, user_id):
+    playlist = get_playlist_tracks(playlist_id, user_id=user_id)
     if not playlist:
         raise ValueError("Playlist not found.")
 
@@ -115,6 +165,39 @@ def css():
 @app.route("/app.js")
 def js():
     return send_from_directory(".", "app.js")
+
+
+@app.route("/api/config", methods=["GET"])
+def config():
+    cfg = supabase_public_config()
+    return jsonify(
+        {
+            "supabase_enabled": bool(cfg.get("enabled")),
+            "supabase_url": cfg.get("url", ""),
+            "supabase_anon_key": cfg.get("anon_key", ""),
+            "storage_mode": "supabase" if is_supabase_mode() else "local",
+        }
+    )
+
+
+@app.route("/api/auth/session", methods=["GET", "POST", "DELETE"])
+def auth_session():
+    if not is_supabase_mode():
+        return jsonify({"enabled": False, "user": None})
+
+    if request.method == "DELETE":
+        _clear_supabase_session_identity()
+        return jsonify({"ok": True, "user": None})
+
+    if request.method == "GET":
+        user = _resolve_current_user(required=False, allow_session=True)
+        return jsonify({"enabled": True, "user": user})
+
+    try:
+        user = _resolve_current_user(required=True)
+        return jsonify({"enabled": True, "user": user})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
 
 
 @app.route("/recommend", methods=["POST"])
@@ -148,13 +231,28 @@ def search():
 @app.route("/api/bootstrap", methods=["GET"])
 def bootstrap():
     try:
+        user_id = None
+        if is_supabase_mode():
+            user = _resolve_current_user(required=False, allow_session=True)
+            if not user:
+                return jsonify(
+                    {
+                        "liked_tracks": [],
+                        "recent_tracks": [],
+                        "playlists": [],
+                        "auth_required": True,
+                    }
+                )
+            user_id = user["id"]
         return jsonify(
             {
-                "liked_tracks": get_liked_tracks(),
-                "recent_tracks": get_recent_tracks(limit=10),
-                "playlists": list_playlists(),
+                "liked_tracks": get_liked_tracks(user_id=user_id),
+                "recent_tracks": get_recent_tracks(limit=10, user_id=user_id),
+                "playlists": list_playlists(user_id=user_id),
             }
         )
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except Exception as exc:
         app.logger.exception("Error in /api/bootstrap")
         return _json_error(str(exc), 500)
@@ -163,7 +261,10 @@ def bootstrap():
 @app.route("/api/liked", methods=["GET"])
 def liked_tracks():
     try:
-        return jsonify({"tracks": get_liked_tracks()})
+        user_id = _require_user_id() if is_supabase_mode() else None
+        return jsonify({"tracks": get_liked_tracks(user_id=user_id)})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except Exception as exc:
         app.logger.exception("Error in /api/liked")
         return _json_error(str(exc), 500)
@@ -173,10 +274,13 @@ def liked_tracks():
 def toggle_liked_track():
     data = request.get_json(force=True, silent=True)
     try:
+        user_id = _require_user_id() if is_supabase_mode() else None
         track = _track_from_body(data)
-        liked = toggle_like(track)
-        tracks = get_liked_tracks()
+        liked = toggle_like(track, user_id=user_id)
+        tracks = get_liked_tracks(user_id=user_id)
         return jsonify({"liked": liked, "tracks": tracks})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except ValueError as exc:
         return _json_error(str(exc), 400)
     except Exception as exc:
@@ -188,24 +292,33 @@ def toggle_liked_track():
 def recent_tracks():
     if request.method == "GET":
         try:
-            return jsonify({"tracks": get_recent_tracks(limit=10)})
+            user_id = _require_user_id() if is_supabase_mode() else None
+            return jsonify({"tracks": get_recent_tracks(limit=10, user_id=user_id)})
+        except PermissionError as exc:
+            return _json_error(str(exc), 401)
         except Exception as exc:
             app.logger.exception("Error in GET /api/recent")
             return _json_error(str(exc), 500)
 
     if request.method == "DELETE":
         try:
-            clear_recent_tracks()
+            user_id = _require_user_id() if is_supabase_mode() else None
+            clear_recent_tracks(user_id=user_id)
             return jsonify({"ok": True, "tracks": []})
+        except PermissionError as exc:
+            return _json_error(str(exc), 401)
         except Exception as exc:
             app.logger.exception("Error in DELETE /api/recent")
             return _json_error(str(exc), 500)
 
     data = request.get_json(force=True, silent=True)
     try:
+        user_id = _require_user_id() if is_supabase_mode() else None
         track = _track_from_body(data)
-        add_recent_play(track)
+        add_recent_play(track, user_id=user_id)
         return jsonify({"ok": True})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except ValueError as exc:
         return _json_error(str(exc), 400)
     except Exception as exc:
@@ -216,8 +329,11 @@ def recent_tracks():
 @app.route("/api/recent/clear", methods=["POST"])
 def clear_recent_tracks_route():
     try:
-        clear_recent_tracks()
+        user_id = _require_user_id() if is_supabase_mode() else None
+        clear_recent_tracks(user_id=user_id)
         return jsonify({"ok": True, "tracks": []})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except Exception as exc:
         app.logger.exception("Error in POST /api/recent/clear")
         return _json_error(str(exc), 500)
@@ -227,15 +343,21 @@ def clear_recent_tracks_route():
 def playlists():
     if request.method == "GET":
         try:
-            return jsonify({"playlists": list_playlists()})
+            user_id = _require_user_id() if is_supabase_mode() else None
+            return jsonify({"playlists": list_playlists(user_id=user_id)})
+        except PermissionError as exc:
+            return _json_error(str(exc), 401)
         except Exception as exc:
             app.logger.exception("Error in GET /api/playlists")
             return _json_error(str(exc), 500)
 
     data = request.get_json(force=True, silent=True)
     try:
-        created = create_playlist((data or {}).get("name", ""))
-        return jsonify({"playlist": created, "playlists": list_playlists()})
+        user_id = _require_user_id() if is_supabase_mode() else None
+        created = create_playlist((data or {}).get("name", ""), user_id=user_id)
+        return jsonify({"playlist": created, "playlists": list_playlists(user_id=user_id)})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except ValueError as exc:
         return _json_error(str(exc), 400)
     except Exception as exc:
@@ -247,19 +369,25 @@ def playlists():
 def playlist_tracks(playlist_id):
     if request.method == "DELETE":
         try:
-            deleted = delete_playlist(playlist_id)
+            user_id = _require_user_id() if is_supabase_mode() else None
+            deleted = delete_playlist(playlist_id, user_id=user_id)
             if not deleted:
                 return _json_error("Playlist not found.", 404)
-            return jsonify({"deleted": True, "playlists": list_playlists()})
+            return jsonify({"deleted": True, "playlists": list_playlists(user_id=user_id)})
+        except PermissionError as exc:
+            return _json_error(str(exc), 401)
         except Exception as exc:
             app.logger.exception("Error in DELETE /api/playlists/<id>")
             return _json_error(str(exc), 500)
 
     try:
-        result = get_playlist_tracks(playlist_id)
+        user_id = _require_user_id() if is_supabase_mode() else None
+        result = get_playlist_tracks(playlist_id, user_id=user_id)
         if not result:
             return _json_error("Playlist not found.", 404)
         return jsonify(result)
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except Exception as exc:
         app.logger.exception("Error in GET /api/playlists/<id>")
         return _json_error(str(exc), 500)
@@ -268,10 +396,13 @@ def playlist_tracks(playlist_id):
 @app.route("/api/playlists/<int:playlist_id>/delete", methods=["POST"])
 def delete_playlist_route(playlist_id):
     try:
-        deleted = delete_playlist(playlist_id)
+        user_id = _require_user_id() if is_supabase_mode() else None
+        deleted = delete_playlist(playlist_id, user_id=user_id)
         if not deleted:
             return _json_error("Playlist not found.", 404)
-        return jsonify({"deleted": True, "playlists": list_playlists()})
+        return jsonify({"deleted": True, "playlists": list_playlists(user_id=user_id)})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except Exception as exc:
         app.logger.exception("Error in POST /api/playlists/<id>/delete")
         return _json_error(str(exc), 500)
@@ -285,6 +416,12 @@ def export_playlist_spotify(playlist_id):
             400,
         )
 
+    try:
+        user_id = _require_user_id() if is_supabase_mode() else "local-user"
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
+
+    session[SPOTIFY_USER_ID_SESSION_KEY] = user_id
     access_token = _get_spotify_access_token()
     if not access_token:
         return (
@@ -299,7 +436,7 @@ def export_playlist_spotify(playlist_id):
         )
 
     try:
-        result = _export_playlist_with_spotify_token(playlist_id)
+        result = _export_playlist_with_spotify_token(playlist_id, user_id=user_id)
         return jsonify(result)
     except ValueError as exc:
         return _json_error(str(exc), 404)
@@ -350,6 +487,17 @@ def spotify_login():
             }
         )
 
+    if is_supabase_mode():
+        user = _resolve_current_user(required=False, allow_session=True)
+        if not user:
+            return _redirect_with_query(
+                {
+                    "spotify_export": "error",
+                    "message": "Sign in first, then connect Spotify.",
+                }
+            )
+        session[SPOTIFY_USER_ID_SESSION_KEY] = user["id"]
+
     playlist_id = request.args.get("playlist_id", "").strip()
     if playlist_id:
         session[SPOTIFY_PENDING_PLAYLIST_KEY] = playlist_id
@@ -381,11 +529,18 @@ def spotify_callback():
         return _redirect_with_query({"spotify_export": "error", "message": str(exc)})
 
     pending_playlist_id = session.pop(SPOTIFY_PENDING_PLAYLIST_KEY, None)
+    user_id = session.get(SPOTIFY_USER_ID_SESSION_KEY)
     if not pending_playlist_id:
         return _redirect_with_query({"spotify_export": "connected"})
 
     try:
-        result = _export_playlist_with_spotify_token(int(pending_playlist_id))
+        if is_supabase_mode() and not user_id:
+            raise PermissionError("Sign in session expired. Please sign in again and retry export.")
+
+        result = _export_playlist_with_spotify_token(
+            int(pending_playlist_id),
+            user_id=user_id or "local-user",
+        )
         return _redirect_with_query(
             {
                 "spotify_export": "success",
@@ -403,9 +558,12 @@ def spotify_callback():
 def add_playlist_track(playlist_id):
     data = request.get_json(force=True, silent=True)
     try:
+        user_id = _require_user_id() if is_supabase_mode() else None
         track = _track_from_body(data)
-        added = add_track_to_playlist(playlist_id, track)
+        added = add_track_to_playlist(playlist_id, track, user_id=user_id)
         return jsonify({"added": added})
+    except PermissionError as exc:
+        return _json_error(str(exc), 401)
     except ValueError as exc:
         return _json_error(str(exc), 400)
     except Exception as exc:

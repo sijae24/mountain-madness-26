@@ -46,6 +46,9 @@ const eTextVal = document.getElementById("e-text-val");
 const likedCount = document.getElementById("liked-count");
 const playlistList = document.getElementById("playlist-list");
 const newPlaylistBtn = document.getElementById("new-playlist-btn");
+const userAvatar = document.getElementById("user-avatar");
+const userLabel = document.getElementById("user-label");
+const authBtn = document.getElementById("auth-btn");
 
 const barArt = document.getElementById("bar-art");
 const barName = document.getElementById("bar-name");
@@ -89,6 +92,10 @@ let activePlayBtn = null;
 let ticker = null;
 let currentVolume = 0.68;
 let isDraggingVolume = false;
+let supabaseClient = null;
+let supabaseEnabled = false;
+let authUser = null;
+let authAccessToken = null;
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const esc = (s) =>
@@ -139,11 +146,172 @@ function setComposerVisible(visible) {
   composer.style.display = visible ? "" : "none";
 }
 
+function initials(value) {
+  const text = String(value || "").trim();
+  if (!text) return "MW";
+  const parts = text.split(/[\s@._-]+/).filter(Boolean);
+  if (!parts.length) return "MW";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+}
+
+function updateAuthUI() {
+  if (!authBtn || !userLabel || !userAvatar) return;
+
+  if (!supabaseEnabled) {
+    userLabel.textContent = "Local";
+    userAvatar.textContent = "MW";
+    authBtn.style.display = "none";
+    return;
+  }
+
+  if (authUser?.email) {
+    userLabel.textContent = authUser.email;
+    userAvatar.textContent = initials(authUser.email);
+    authBtn.textContent = "Sign Out";
+    authBtn.style.display = "inline-flex";
+    return;
+  }
+
+  userLabel.textContent = "Guest";
+  userAvatar.textContent = "MW";
+  authBtn.textContent = "Sign In";
+  authBtn.style.display = "inline-flex";
+}
+
+async function syncServerAuthSession(token) {
+  if (!supabaseEnabled || !token) return;
+  await fetch("/api/auth/session", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+async function clearServerAuthSession() {
+  if (!supabaseEnabled) return;
+  await fetch("/api/auth/session", { method: "DELETE" });
+}
+
+async function getAccessToken() {
+  if (!supabaseClient) return null;
+  const { data } = await supabaseClient.auth.getSession();
+  authAccessToken = data?.session?.access_token || null;
+  return authAccessToken;
+}
+
+async function refreshAuthState() {
+  if (!supabaseClient) {
+    authUser = null;
+    authAccessToken = null;
+    updateAuthUI();
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getSession();
+  authUser = data?.session?.user || null;
+  authAccessToken = data?.session?.access_token || null;
+
+  if (authAccessToken) {
+    await syncServerAuthSession(authAccessToken);
+  } else {
+    await clearServerAuthSession();
+  }
+  updateAuthUI();
+}
+
+async function initSupabaseAuth() {
+  const cfg = await fetch("/api/config").then((r) => r.json()).catch(() => ({}));
+  supabaseEnabled = !!cfg.supabase_enabled;
+
+  if (cfg.storage_mode === "supabase" && !supabaseEnabled) {
+    showError("Supabase mode is enabled but client config is missing. Add SUPABASE_URL and SUPABASE_ANON_KEY.");
+    updateAuthUI();
+    return;
+  }
+
+  if (!supabaseEnabled) {
+    updateAuthUI();
+    return;
+  }
+
+  if (!window.supabase?.createClient) {
+    showError("Supabase client failed to load.");
+    updateAuthUI();
+    return;
+  }
+
+  supabaseClient = window.supabase.createClient(cfg.supabase_url, cfg.supabase_anon_key);
+  await refreshAuthState();
+
+  supabaseClient.auth.onAuthStateChange(async (_event, sessionData) => {
+    authUser = sessionData?.user || null;
+    authAccessToken = sessionData?.access_token || null;
+    if (authAccessToken) {
+      await syncServerAuthSession(authAccessToken);
+    } else {
+      await clearServerAuthSession();
+    }
+    updateAuthUI();
+  });
+}
+
+async function startAuthFlow() {
+  if (!supabaseEnabled || !supabaseClient) {
+    return;
+  }
+
+  if (authUser) {
+    await supabaseClient.auth.signOut();
+    authUser = null;
+    authAccessToken = null;
+    state.likedTracks = [];
+    state.recentTracks = [];
+    state.playlists = [];
+    state.playlistTracks = [];
+    state.currentPlaylistId = null;
+    updateLikedCount();
+    renderPlaylistsSidebar();
+    renderCurrentView();
+    updateAuthUI();
+    return;
+  }
+
+  const mode = (window.prompt("Type login or signup:", "login") || "").trim().toLowerCase();
+  if (!mode) return;
+
+  const email = (window.prompt("Email:") || "").trim();
+  if (!email) return;
+  const password = window.prompt("Password (min 6 chars):") || "";
+  if (!password) return;
+
+  try {
+    if (mode === "signup" || mode === "sign-up" || mode === "register") {
+      const { error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) throw error;
+      window.alert("Account created. If email confirmation is enabled, confirm it then sign in.");
+    } else {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      await refreshLikedTracks();
+      await refreshRecentTracks();
+      await refreshPlaylists();
+      renderCurrentView();
+    }
+  } catch (error) {
+    showError(error.message || "Auth failed.");
+    window.alert(`Auth failed: ${error.message || "unknown error"}`);
+  }
+}
+
 async function api(url, options = {}) {
+  const token = await getAccessToken();
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -919,6 +1087,10 @@ newPlaylistBtn.addEventListener("click", async () => {
   }
 });
 
+authBtn?.addEventListener("click", () => {
+  startAuthFlow().catch((error) => showError(error.message));
+});
+
 exportSpotifyBtn.addEventListener("click", async () => {
   await exportCurrentPlaylistToSpotify();
 });
@@ -1030,10 +1202,14 @@ async function init() {
   clearError();
 
   try {
+    await initSupabaseAuth();
     const data = await api("/api/bootstrap");
     state.likedTracks = (data.liked_tracks || []).map(normalizeTrack);
     state.recentTracks = (data.recent_tracks || []).map(normalizeTrack);
     state.playlists = data.playlists || [];
+    if (data.auth_required) {
+      showError("Sign in to sync liked songs, recents, and playlists across users.");
+    }
     updateLikedCount();
     renderPlaylistsSidebar();
     renderCurrentView();
