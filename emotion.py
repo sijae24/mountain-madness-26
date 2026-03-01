@@ -16,19 +16,46 @@ emotion_classifier = pipeline(
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
-LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/"
+LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/"
+FALLBACK_TAGS = [
+    "pop",
+    "rock",
+    "indie",
+    "electronic",
+    "ambient",
+    "jazz",
+    "classical",
+    "hip-hop",
+    "sad",
+    "happy",
+    "chill",
+]
 
 def fetch_lastfm_top_tags():
+    if not LASTFM_API_KEY:
+        return FALLBACK_TAGS
+
     # Step 1: Fetch top 100 tags from Last.fm
-    response = requests.get(LASTFM_BASE_URL, params={
-        "method": "chart.gettoptags",
-        "api_key": LASTFM_API_KEY,
-        "format": "json",
-        "limit": 100
-    })
-    data = response.json()
-    tags = data.get("tags", {}).get("tag", [])
-    all_tags = [t["name"].lower() for t in tags]
+    try:
+        response = requests.get(
+            LASTFM_BASE_URL,
+            params={
+                "method": "chart.gettoptags",
+                "api_key": LASTFM_API_KEY,
+                "format": "json",
+                "limit": 100,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+        tags = data.get("tags", {}).get("tag", [])
+        all_tags = [t["name"].lower() for t in tags if t.get("name")]
+    except requests.RequestException:
+        return FALLBACK_TAGS
+
+    if not all_tags:
+        return FALLBACK_TAGS
 
     # Step 2: Ask Gemini to filter out meta-tags
     prompt = f"""
@@ -42,15 +69,18 @@ def fetch_lastfm_top_tags():
 
     Return ONLY a comma-separated list of the valid music tags, nothing else.
     """
-    filter_response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-    filtered = [t.strip().lower() for t in filter_response.text.split(",")]
+    try:
+        filter_response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        filtered = [t.strip().lower() for t in (filter_response.text or "").split(",")]
+    except Exception:
+        filtered = []
 
     # Only keep tags that were in the original Last.fm list
     filtered = [t for t in filtered if t in all_tags]
-    return filtered
+    return filtered or all_tags[:30] or FALLBACK_TAGS
 
 # Fetch and filter tags once at startup
 print("Fetching and filtering tags from Last.fm...")
