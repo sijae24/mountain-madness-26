@@ -38,8 +38,7 @@ def get_top_track_for_artist(artist):
     return {
         "name": track["name"],
         "artist": artist,
-        "url": track["url"],
-        "tag": track["tag"]
+        "url": track["url"]
     }
 
 def get_recommendations(text):
@@ -49,17 +48,21 @@ def get_recommendations(text):
     tag = emotion_data["tag"]
 
     # Step 2: Get pool of artists for this emotion tag
+    print(f"Gemini tag: {tag}")
     artists = get_top_artists_for_tag(tag)
+    print(f"Artists found: {artists}")
     if not artists:
         return {"emotion": emotion, "tracks": []}
 
     # Step 3: Pick 3 random different artists
     selected_artists = random.sample(artists, min(3, len(artists)))
+    print(f"Selected artists: {selected_artists}")
 
     # Step 4: Get one track from each artist
     tracks = []
     for artist in selected_artists:
         track = get_top_track_for_artist(artist)
+        print(f"Track for {artist}: {track}")
         if track:
             tracks.append(track)
 
