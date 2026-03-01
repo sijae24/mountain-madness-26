@@ -1,6 +1,10 @@
 from transformers import pipeline
 from google import genai
 import requests
+import os 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Load the HuggingFace emotion detection model
 emotion_classifier = pipeline(
@@ -9,9 +13,9 @@ emotion_classifier = pipeline(
 )
 
 # Configure Gemini
-client = genai.Client(api_key="AIzaSyA2F8n4_Ne-ENQ2VHi8Vxr26--aRPJI60o")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-LASTFM_API_KEY = "1be977045d82a3b04f3e89d6ddfbf356"
+LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
 LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/"
 
 def fetch_lastfm_top_tags():
