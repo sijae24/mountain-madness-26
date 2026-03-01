@@ -91,5 +91,5 @@ def get_emotion_data(text):
     }
 
 if __name__ == "__main__":
-    test = get_emotion_data("I'm pumped to go to the gym")
+    test = get_emotion_data("I'm pumped for the gym")
     print(test)
